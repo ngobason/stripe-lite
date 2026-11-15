@@ -16,6 +16,7 @@ import (
 	"github.com/thep1ckaxe91/stripe-lite/internal/config"
 	"github.com/thep1ckaxe91/stripe-lite/internal/docs"
 	"github.com/thep1ckaxe91/stripe-lite/internal/payments"
+	"github.com/thep1ckaxe91/stripe-lite/internal/webhooks"
 )
 
 const version = "1.0.0"
@@ -37,6 +38,15 @@ func main() {
 		log.Fatalf("Payments configuration: %v", err)
 	}
 	defer runtime.Close()
+	// Initialize Webhook persistence.
+	webhookStartup, webhookDone := context.WithTimeout(context.Background(), 5*time.Second)
+	webhookRuntime, err := webhooks.LoadRuntime(webhookStartup)
+	webhookDone()
+
+	if err != nil {
+		log.Fatalf("Webhooks configuration: %v", err)
+	}
+	defer webhookRuntime.Close()
 	workerCtx, stopWorker := context.WithCancel(context.Background())
 	defer stopWorker()
 	workerDone := make(chan struct{})
@@ -58,7 +68,11 @@ func main() {
 	})
 
 	// Instantiate strictly-typed domain server
-	domainServer := v1.NewServer(version, v1.WithPayments(runtime.Service, runtime.Credentials, runtime.RateLimit))
+	domainServer := v1.NewServer(
+		version,
+		v1.WithPayments(runtime.Service, runtime.Credentials, runtime.RateLimit),
+		v1.WithWebhooks(webhookRuntime.Service),
+	)
 	paymentMiddleware, err := domainServer.PaymentMiddleware(cfg.BasePath)
 	if err != nil {
 		log.Fatalf("Payments contract: %v", err)

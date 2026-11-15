@@ -66,7 +66,17 @@ func (s *Server) PaymentMiddleware(basePath string) (gin.HandlerFunc, error) {
 	nextSweep := time.Now().Add(time.Minute)
 	return func(c *gin.Context) {
 		path := strings.TrimPrefix(c.Request.URL.Path, basePath)
-		if path != "/payment-intents" && !strings.HasPrefix(path, "/payment-intents/") && path != "/refunds" && !strings.HasPrefix(path, "/refunds/") {
+
+		isPayments := path == "/payment-intents" ||
+			strings.HasPrefix(path, "/payment-intents/")
+
+		isRefunds := path == "/refunds" ||
+			strings.HasPrefix(path, "/refunds/")
+
+		isWebhooks := path == "/webhook-endpoints" ||
+			strings.HasPrefix(path, "/webhook-endpoints/")
+
+		if !isPayments && !isRefunds && !isWebhooks {
 			c.Next()
 			return
 		}
@@ -87,8 +97,11 @@ func (s *Server) PaymentMiddleware(basePath string) (gin.HandlerFunc, error) {
 			return
 		}
 		scope := "payment_intents:"
-		if strings.HasPrefix(path, "/refunds") {
+
+		if isRefunds {
 			scope = "refunds:"
+		} else if isWebhooks {
+			scope = "webhooks:"
 		}
 		if c.Request.Method == http.MethodGet {
 			scope += "read"

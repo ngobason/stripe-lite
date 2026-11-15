@@ -35,3 +35,7 @@ CREATE INDEX webhook_endpoints_merchant_page_idx
         created_at DESC,
         id DESC
     );
+
+-- Prevent duplicate webhook destinations within the same merchant.
+CREATE UNIQUE INDEX webhook_endpoints_merchant_url_unique_idx
+ON public.webhook_endpoints (merchant_id, url);

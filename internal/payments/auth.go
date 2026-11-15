@@ -58,10 +58,15 @@ func NewCredentials(config, secret, issuer, audience string) (*Credentials, erro
 			p := Principal{v.MerchantID, map[string]bool{}}
 			for _, s := range v.Scopes {
 				switch s {
-				case "payment_intents:read", "payment_intents:write", "refunds:read", "refunds:write":
+				case "payment_intents:read",
+					"payment_intents:write",
+					"refunds:read",
+					"refunds:write",
+					"webhooks:read",
+					"webhooks:write":
 					p.Scopes[s] = true
 				default:
-					return nil, errors.New("API key has an unsupported Payments scope")
+					return nil, errors.New("API key has an unsupported scope")
 				}
 			}
 			hash := sha256.Sum256([]byte(v.Key))

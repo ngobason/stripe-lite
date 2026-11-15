@@ -5,12 +5,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/thep1ckaxe91/stripe-lite/internal/payments"
+	"github.com/thep1ckaxe91/stripe-lite/internal/webhooks"
 )
 
 // Server implements StrictServerInterface for Stripe-lite v1 API gateway.
 type Server struct {
 	version   string
 	payments  *payments.Service
+	webhooks  *webhooks.Service
 	auth      payments.Authenticator
 	rateLimit int
 }
@@ -29,6 +31,13 @@ func WithPayments(service *payments.Service, auth payments.Authenticator, rateLi
 		if rateLimit > 0 {
 			s.rateLimit = rateLimit
 		}
+	}
+}
+
+// WithWebhooks injects the webhook service into the API server.
+func WithWebhooks(service *webhooks.Service) func(*Server) {
+	return func(s *Server) {
+		s.webhooks = service
 	}
 }
 
